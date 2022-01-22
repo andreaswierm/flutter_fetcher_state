@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_fetcher_state/src/models/mutation_notifier/mutation_notifier.dart';
 
 enum _MutationStatus {
   loading,
@@ -6,9 +7,14 @@ enum _MutationStatus {
 }
 
 class MutationStatusNotifier<T> extends ChangeNotifier {
+  final MutationNotifier<T>? notifier;
   _MutationStatus _status = _MutationStatus.settled;
   T? _data;
   Object? _error;
+
+  MutationStatusNotifier({
+    this.notifier,
+  });
 
   bool get isLoading => _status == _MutationStatus.loading;
   bool get isEmpty => _data == null;
@@ -22,6 +28,8 @@ class MutationStatusNotifier<T> extends ChangeNotifier {
   }
 
   void setData(T data) {
+    notifier?.onSuccess(data);
+
     _setState(
       status: _MutationStatus.settled,
       data: data,
@@ -29,6 +37,8 @@ class MutationStatusNotifier<T> extends ChangeNotifier {
   }
 
   void setError(Object error) {
+    notifier?.onError(error);
+
     _setState(
       status: _MutationStatus.settled,
       error: error,
