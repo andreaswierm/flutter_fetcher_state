@@ -1,3 +1,4 @@
-## 0.0.1
+## 1.0.0
 
-* TODO: Describe initial release.
+* Add Query with QueryBuilder
+* Add Mutation with MutationBuilder
