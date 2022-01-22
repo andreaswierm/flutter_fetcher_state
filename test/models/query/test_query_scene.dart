@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fetcher_state/flutter_fetcher_state.dart';
 
-class TestScene<T> extends StatelessWidget {
+class TestQueryScene<T> extends StatelessWidget {
   final Future<T> Function(BuildContext)? fetcher;
   final Stream<T> Function(BuildContext)? createStream;
 
-  const TestScene({
+  const TestQueryScene({
     Key? key,
     this.fetcher,
     this.createStream,
