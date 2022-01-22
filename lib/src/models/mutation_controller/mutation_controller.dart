@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_fetcher_state/src/models/mutation_status_notifier/mutation_status_notifier.dart';
 
-typedef Mutation<T> = Future<T> Function(BuildContext);
+typedef MutationCallback<T> = Future<T> Function(BuildContext);
 
 class MutationController<T> extends MutationStatusNotifier<T> {
   final BuildContext context;
@@ -10,7 +10,7 @@ class MutationController<T> extends MutationStatusNotifier<T> {
     required this.context,
   });
 
-  void mutate(Mutation<T> mutation) async {
+  void mutate(MutationCallback<T> mutation) async {
     setIsLoading();
 
     try {
