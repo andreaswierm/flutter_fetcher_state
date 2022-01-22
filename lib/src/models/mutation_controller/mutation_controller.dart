@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_fetcher_state/src/models/mutation_state_notifier/mutation_state_notifier.dart';
+import 'package:flutter_fetcher_state/src/models/mutation_status_notifier/mutation_status_notifier.dart';
 
 typedef Mutation<T> = Future<T> Function(BuildContext);
 

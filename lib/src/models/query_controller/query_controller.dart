@@ -1,12 +1,10 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_fetcher_state/src/models/query_state/query_state.dart';
+import 'package:flutter_fetcher_state/src/models/query_status_notifier/query_status_notifier.dart';
 
-class QueryController<T> extends ChangeNotifier {
+class QueryController<T> extends QueryStatusNotifier<T> {
   final Future<T>? Function()? fetcher;
   final Stream<T>? Function()? createStream;
-  QueryState<T> _state = QueryState.empty();
 
   QueryController({
     this.fetcher,
@@ -16,26 +14,12 @@ class QueryController<T> extends ChangeNotifier {
     subscribe();
   }
 
-  bool get hasData => _state.hasData;
-  bool get hasError => _state.hasError;
-  bool get isEmpty => _state.isEmpty;
-  bool get isFetching => _state.isFetching;
-  bool get isLoading => _state.isLoading;
-  Object? get error => _state.error;
-  T? get data => _state.data;
-
-  set state(QueryState<T> newState) {
-    _state = newState;
-
-    notifyListeners();
-  }
-
   Future<void> load() async {
     final future = fetcher?.call();
 
     if (future == null) return;
 
-    state = QueryState.loading();
+    setIsLoading();
 
     return _handleFuture(future);
   }
@@ -45,7 +29,7 @@ class QueryController<T> extends ChangeNotifier {
 
     if (future == null) return;
 
-    state = QueryState.fetching(_state.data);
+    setFetching();
 
     return _handleFuture(future);
   }
@@ -55,9 +39,7 @@ class QueryController<T> extends ChangeNotifier {
 
     if (stream == null) return;
 
-    stream.listen((data) {
-      state = QueryState.successful(data);
-    });
+    stream.listen(setData);
   }
 
   void debug() {
@@ -82,9 +64,9 @@ class QueryController<T> extends ChangeNotifier {
 
       final T data = await future;
 
-      state = QueryState.successful(data);
+      setData(data);
     } catch (err) {
-      state = QueryState.failure(err);
+      setError(err);
     }
   }
 }
