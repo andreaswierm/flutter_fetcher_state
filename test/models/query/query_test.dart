@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'test_scene.dart';
+import 'test_query_scene.dart';
 
 void main() {
   group("Query", () {
@@ -11,7 +11,7 @@ void main() {
         "Should render all fetcher states to successful",
         (WidgetTester tester) async {
           await tester.pumpWidget(
-            TestScene(
+            TestQueryScene(
               fetcher: (_) => Future.value("Hello world"),
             ),
           );
@@ -30,7 +30,7 @@ void main() {
           final StreamController<String> _streamController = StreamController();
 
           await tester.pumpWidget(
-            TestScene(
+            TestQueryScene(
               createStream: (_) => _streamController.stream,
             ),
           );
@@ -49,7 +49,7 @@ void main() {
         "Should show error when the API fails to fetch",
         (WidgetTester tester) async {
           await tester.pumpWidget(
-            TestScene(
+            TestQueryScene(
               fetcher: (_) => Future.error("Failed to fetch"),
             ),
           );
@@ -68,7 +68,7 @@ void main() {
           String data = "Hello world";
 
           await tester.pumpWidget(
-            TestScene(
+            TestQueryScene(
               fetcher: (_) => Future.value(data),
             ),
           );
