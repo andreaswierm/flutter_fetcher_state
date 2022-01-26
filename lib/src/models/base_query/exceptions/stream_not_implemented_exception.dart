@@ -1,0 +1,1 @@
+class StreamBuilderNotImplemented implements Exception {}
