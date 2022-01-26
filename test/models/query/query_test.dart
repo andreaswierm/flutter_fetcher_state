@@ -1,18 +1,54 @@
-import 'dart:async';
-
+import 'package:flutter/material.dart';
+import 'package:flutter_fetcher_state/flutter_fetcher_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'test_query_scene.dart';
+import '../../crypto_repo/crypto_repo.dart';
+import '../../crypto_repo/queries/failure_query/failure_query.dart';
+import '../../crypto_repo/queries/list_coins/list_coins.dart';
+import '../../crypto_repo/queries/list_coins_stream_only/list_coins_stream_only.dart';
+import '../../utils/build_query_state/build_query_state.dart';
+import '../../utils/list_coins/list_coins.dart';
 
 void main() {
+  Widget renderApp({
+    required Query<List<Coin>> query,
+  }) {
+    return MaterialApp(
+      home: Query.builder<List<Coin>>(
+        query: query,
+        builder: (context, controller) {
+          return BuildQueryState<List<Coin>>(
+            controller: controller,
+            builder: (context, coins) => Column(
+              children: [
+                ListCoins(coins: coins),
+                TextButton(
+                  child: const Text("reload"),
+                  onPressed: () => controller.fetch(),
+                )
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   group("Query", () {
     group("#builder()", () {
       testWidgets(
-        "Should render all fetcher states to successful",
+        "Should list all coins",
         (WidgetTester tester) async {
+          final CryptoRepo repo = CryptoRepo(
+            coins: [
+              ethereumCoin,
+              bitcoinCoin,
+            ],
+          );
+
           await tester.pumpWidget(
-            TestQueryScene(
-              fetcher: (_) => Future.value("Hello world"),
+            renderApp(
+              query: ListCoinsQuery(repo: repo),
             ),
           );
 
@@ -20,37 +56,47 @@ void main() {
 
           await tester.pump();
 
-          expect(find.text("Hello world"), findsOneWidget);
+          expect(find.text(ethereumCoin.name), findsOneWidget);
+          expect(find.text(bitcoinCoin.name), findsOneWidget);
         },
       );
 
       testWidgets(
         "Should update the view with data from stream",
         (WidgetTester tester) async {
-          final StreamController<String> _streamController = StreamController();
+          final CryptoRepo repo = CryptoRepo(
+            coins: [
+              ethereumCoin,
+              bitcoinCoin,
+            ],
+          );
 
           await tester.pumpWidget(
-            TestQueryScene(
-              createStream: (_) => _streamController.stream,
+            renderApp(
+              query: ListCoinsStreamOnlyQuery(repo: repo),
             ),
           );
 
           expect(find.text("Empty"), findsOneWidget);
 
-          _streamController.add("Hello world");
+          await repo.add(tetherCoin);
 
           await tester.pump();
 
-          expect(find.text("Hello world"), findsOneWidget);
+          expect(find.text(ethereumCoin.name), findsOneWidget);
+          expect(find.text(bitcoinCoin.name), findsOneWidget);
+          expect(find.text(tetherCoin.name), findsOneWidget);
         },
       );
 
       testWidgets(
         "Should show error when the API fails to fetch",
         (WidgetTester tester) async {
+          final Exception exception = Exception("Failed to fetch");
+
           await tester.pumpWidget(
-            TestQueryScene(
-              fetcher: (_) => Future.error("Failed to fetch"),
+            renderApp(
+              query: FailureQuery(exception: exception),
             ),
           );
 
@@ -58,18 +104,23 @@ void main() {
 
           await tester.pump();
 
-          expect(find.text("Error: Failed to fetch"), findsOneWidget);
+          expect(find.text(exception.toString()), findsOneWidget);
         },
       );
 
       testWidgets(
         "Should allow to refetch",
         (WidgetTester tester) async {
-          String data = "Hello world";
+          final CryptoRepo repo = CryptoRepo(
+            coins: [
+              ethereumCoin,
+              bitcoinCoin,
+            ],
+          );
 
           await tester.pumpWidget(
-            TestQueryScene(
-              fetcher: (_) => Future.value(data),
+            renderApp(
+              query: ListCoinsQuery(repo: repo),
             ),
           );
 
@@ -77,15 +128,19 @@ void main() {
 
           await tester.pump();
 
-          expect(find.text("Hello world"), findsOneWidget);
+          expect(find.text(ethereumCoin.name), findsOneWidget);
+          expect(find.text(bitcoinCoin.name), findsOneWidget);
+          expect(find.text(tetherCoin.name), findsNothing);
 
-          data = "Hello mercury";
+          await repo.add(tetherCoin);
 
-          await tester.tap(find.text("Refetch"));
+          await tester.tap(find.text("reload"));
 
           await tester.pump();
 
-          expect(find.text("Hello mercury"), findsOneWidget);
+          expect(find.text(ethereumCoin.name), findsOneWidget);
+          expect(find.text(bitcoinCoin.name), findsOneWidget);
+          expect(find.text(tetherCoin.name), findsOneWidget);
         },
       );
     });

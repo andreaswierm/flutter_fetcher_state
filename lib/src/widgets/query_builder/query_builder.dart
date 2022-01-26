@@ -16,7 +16,13 @@ class QueryBuilder<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: create,
+      create: (context) {
+        final controller = create(context);
+
+        controller.start();
+
+        return controller;
+      },
       child: Consumer<QueryController<T>>(
         builder: (context, model, _) => builder(context, model),
       ),

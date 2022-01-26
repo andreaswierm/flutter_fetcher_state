@@ -1,45 +1,50 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:flutter_fetcher_state/src/models/query/query.dart';
 import 'package:flutter_fetcher_state/src/models/query_status_notifier/query_status_notifier.dart';
 
 class QueryController<T> extends QueryStatusNotifier<T> {
-  final Future<T>? Function()? fetcher;
-  final Stream<T>? Function()? createStream;
+  final Query<T> query;
+  StreamSubscription<T>? _streamSubscription;
+  final BuildContext Function() getBuildContext;
 
   QueryController({
-    this.fetcher,
-    this.createStream,
-  }) {
-    load();
-    subscribe();
+    required this.query,
+    required this.getBuildContext,
+  });
+
+  BuildContext get context => getBuildContext();
+
+  void start() {
+    _startFetcher();
+
+    _streamSubscription = query.subscribe(context)?.listen(setData);
   }
 
-  Future<void> load() async {
-    final future = fetcher?.call();
+  void _startFetcher() async {
+    final future = query.fetch(context);
 
     if (future == null) return;
 
     setIsLoading();
 
-    return _handleFuture(future);
+    await _handleFuture(future);
   }
 
-  Future<void> refetch() async {
-    final future = fetcher?.call();
+  @override
+  void dispose() async {
+    super.dispose();
 
-    if (future == null) return;
+    await _streamSubscription?.cancel();
+  }
+
+  Future<void> fetch() async {
+    final future = query.fetch(context);
 
     setFetching();
 
     return _handleFuture(future);
-  }
-
-  void subscribe() {
-    final Stream<T>? stream = createStream?.call();
-
-    if (stream == null) return;
-
-    stream.listen(setData);
   }
 
   void debug() {
