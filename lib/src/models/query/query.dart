@@ -1,29 +1,47 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter_fetcher_state/flutter_fetcher_state.dart';
+import 'package:flutter_fetcher_state/src/common_actions/set_async_state_action/set_async_state_action.dart';
 import 'package:flutter_fetcher_state/src/models/base_query/base_query.dart';
-import 'package:flutter_fetcher_state/src/models/query_controller/query_controller.dart';
-import 'package:flutter_fetcher_state/src/types.dart';
-import 'package:flutter_fetcher_state/src/widgets/query_builder/query_builder.dart';
+import 'package:async/async.dart';
 
-abstract class Query<T> extends BaseQuery<T> {
-  @override
-  Future<T> fetcher(BuildContext context) {
-    throw FetcherNotImplemented();
+class Query<T> extends BaseQuery<T> {
+  Query({
+    required Stream<T> Function() streamBuilder,
+  }) : super(streamBuilder: streamBuilder) {
+    executeActions([
+      SetAsyncStateAction(
+        state: AsyncState.loading(),
+      ),
+      SubscribeAction(),
+    ]);
   }
 
-  @override
-  Stream<T> streamBuilder(BuildContext context) {
-    throw StreamBuilderNotImplemented();
-  }
+  T? get data => state.data;
+  Object? get error => state.error;
+  bool get isLoading => state.status == AsyncStatus.loading;
+  bool get isFetching => state.status == AsyncStatus.fetching || isLoading;
+  bool get hasData => state.data != null;
+  bool get hasError => state.error != null;
 
-  static Widget builder<T>({
-    required Query<T> query,
-    required AsyncQueryBuilder<T> builder,
-  }) =>
-      QueryBuilder<T>(
-        builder: builder,
-        create: (context) => QueryController(
-          query: query,
-          getBuildContext: () => context,
+  static Query<T> fetcher<T>(
+    Future<T> Function() fetcher,
+  ) =>
+      Query(
+        streamBuilder: () => Stream.fromFuture(
+          fetcher(),
         ),
       );
+
+  static Future<void> refetch<T>(Query<T> query) async {
+    return query.executeActions([
+      SetAsyncStateAction(
+        state: AsyncState.fetching(query.data),
+      ),
+      UnsubscribeAction(),
+      SubscribeAction(),
+    ]);
+  }
+
+  static Stream<T> Function() compose<T>(Iterable<Stream<T>> streams) {
+    return () => StreamGroup.merge(streams);
+  }
 }

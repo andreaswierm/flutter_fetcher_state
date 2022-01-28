@@ -1,1 +1,0 @@
-class FetcherNotImplemented implements Exception {}

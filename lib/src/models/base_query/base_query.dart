@@ -1,30 +1,50 @@
-import 'package:flutter/widgets.dart';
+import 'dart:async';
 
-import 'exceptions/exceptions.dart';
+import 'package:flutter_fetcher_state/src/models/async_state/async_state.dart';
+import 'package:flutter_fetcher_state/src/models/async_state_controller/async_state_controller.dart';
 
-export 'exceptions/exceptions.dart';
+export 'actions/actions.dart';
 
-abstract class BaseQuery<T> {
-  Stream<T> streamBuilder(BuildContext context);
-  Future<T> fetcher(BuildContext context);
+class BaseQuery<T> extends AsyncStateController<T> {
+  Stream<T> Function()? streamBuilder;
+  StreamSubscription<T>? _streamSubscription;
 
-  Future<T>? fetch(BuildContext context) {
-    try {
-      return fetcher(context);
-    } on FetcherNotImplemented catch (_) {
-      return null;
-    } catch (error) {
-      rethrow;
-    }
+  BaseQuery({
+    required this.streamBuilder,
+  });
+
+  Future<void> subscribe() async {
+    if (_streamSubscription != null) return;
+
+    final Stream<T>? stream = streamBuilder?.call();
+
+    if (stream == null) return;
+
+    final Completer completer = Completer();
+
+    _streamSubscription = stream.listen(
+      (data) {
+        if (completer.isCompleted == false) {
+          completer.complete();
+        }
+
+        state = AsyncState.success(data);
+      },
+      onError: (error) {
+        if (completer.isCompleted == false) {
+          completer.complete();
+        }
+
+        state = AsyncState.failure(error);
+      },
+    );
+
+    await completer.future;
   }
 
-  Stream<T>? subscribe(BuildContext context) {
-    try {
-      return streamBuilder(context);
-    } on StreamBuilderNotImplemented catch (_) {
-      return null;
-    } catch (error) {
-      rethrow;
-    }
+  Future<void> unsubscribe() async {
+    await _streamSubscription?.cancel();
+
+    _streamSubscription = null;
   }
 }

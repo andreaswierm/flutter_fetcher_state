@@ -1,31 +1,29 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_fetcher_state/src/models/query_controller/query_controller.dart';
-import 'package:flutter_fetcher_state/src/types.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_fetcher_state/src/models/query/query.dart';
+import 'package:flutter_fetcher_state/src/widgets/async_state_builder/async_state_builder.dart';
 
-class QueryBuilder<T> extends StatelessWidget {
-  final QueryController<T> Function(BuildContext) create;
-  final AsyncQueryBuilder<T> builder;
+class QueryBuilder<T> extends StatefulWidget {
+  final Query<T> Function(BuildContext) create;
+  final Widget Function(BuildContext, Query<T> query) builder;
 
   const QueryBuilder({
     Key? key,
-    required this.builder,
     required this.create,
+    required this.builder,
   }) : super(key: key);
 
   @override
+  _QueryBuilderState createState() => _QueryBuilderState<T>();
+}
+
+class _QueryBuilderState<T> extends State<QueryBuilder<T>> {
+  late final Query<T> query = widget.create(context);
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) {
-        final controller = create(context);
-
-        controller.start();
-
-        return controller;
-      },
-      child: Consumer<QueryController<T>>(
-        builder: (context, model, _) => builder(context, model),
-      ),
+    return AsyncStateBuilder(
+      states: [query],
+      builder: (context) => widget.builder(context, query),
     );
   }
 }

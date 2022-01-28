@@ -1,11 +1,10 @@
 import 'package:flutter/widgets.dart';
-import 'package:flutter_fetcher_state/src/models/mutation_controller/mutation_controller.dart';
-import 'package:flutter_fetcher_state/src/types.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_fetcher_state/src/models/mutation/mutation.dart';
+import 'package:flutter_fetcher_state/src/widgets/async_state_builder/async_state_builder.dart';
 
-class MutationBuilder<T> extends StatelessWidget {
-  final MutationController<T> Function(BuildContext) create;
-  final AsyncMutationBuilder<T> builder;
+class MutationBuilder<T> extends StatefulWidget {
+  final Mutation<T> Function(BuildContext) create;
+  final Widget Function(BuildContext, Mutation<T> query) builder;
 
   const MutationBuilder({
     Key? key,
@@ -14,12 +13,17 @@ class MutationBuilder<T> extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  _MutationBuilderState createState() => _MutationBuilderState<T>();
+}
+
+class _MutationBuilderState<T> extends State<MutationBuilder<T>> {
+  late final Mutation<T> mutation = widget.create(context);
+
+  @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<MutationController<T>>(
-      create: create,
-      child: Consumer<MutationController<T>>(
-        builder: (context, controller, _) => builder(context, controller),
-      ),
+    return AsyncStateBuilder(
+      states: [mutation],
+      builder: (context) => widget.builder(context, mutation),
     );
   }
 }
